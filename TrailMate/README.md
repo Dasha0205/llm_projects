@@ -29,6 +29,7 @@
 * Uses OpenAI's `tts-1` model to convert replies to natural speech.
 * Audio is played locally using `pydub` + `ffplay`.
 
+![img.png](img.png)
 ---
 
 ## 🚀 Running Locally
