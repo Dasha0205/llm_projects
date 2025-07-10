@@ -8,12 +8,45 @@ from io import StringIO
 import pandas as pd
 import tempfile
 
+from huggingface_hub import login
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+import torch
+
 load_dotenv(override=True)
 
 openai_api = os.getenv("OPENAI_API_KEY")
 google_api = os.getenv('GOOGLE_API_KEY')
 anthropic_api = os.getenv("ANTHROPIC_API_KEY")
-hf_token = os.getenv("HF_TOKEN")
+
+# hf_token = os.getenv("HF_TOKEN")
+# login(hf_token, add_to_git_credential=True)
+
+# LLAMA_ID = "meta-llama/Meta-Llama-3.1-8B-Instruct"
+# LLAMA_PATH = "./models/llama3"
+# print("Constants are defined!")
+#
+# quant_config = BitsAndBytesConfig(
+#     load_in_4bit=True,
+#     bnb_4bit_use_double_quant=True,
+#     bnb_4bit_compute_dtype=torch.bfloat16,
+#     bnb_4bit_quant_type="nf4"
+# )
+# print("Qualification is done!")
+#
+# def load_model(model_id, local_path):
+#     if not os.path.exists(local_path):
+#         print(f"Downloading {model_id} to {local_path}...")
+#         tokenizer = AutoTokenizer.from_pretrained(model_id, cache_dir=local_path)
+#         model = AutoModelForCausalLM.from_pretrained(model_id, cache_dir=local_path)
+#     else:
+#         print(f"Loading {model_id} from local path {local_path}")
+#         tokenizer = AutoTokenizer.from_pretrained(local_path)
+#         model = AutoModelForCausalLM.from_pretrained(local_path, device_map="auto", quantization_config=quant_config)
+#
+#     tokenizer.pad_token = tokenizer.eos_token
+#     return tokenizer, model
+
+# llama_tokenizer, llama_model = load_model(LLAMA_ID, LLAMA_PATH)
 
 system_prompt = f"""You create synthetic datasets for testing purposes.  
 Based on the use case description, generate a CSV dataset with appropriate columns and a as much rows as the user tell
@@ -68,11 +101,21 @@ def google_call(usecase, num_rows):
     return response.text
 
 
-def phi3_call(usecase, num_rows):
-    return 0
+# def llama_call(usecase, num_rows):
+#     return hf_generate(llama_tokenizer, llama_model, usecase, num_rows)
+#
+#
+# def hf_generate(tokenizer, model, usecase, num_rows):
+#     messages = [{"role": "system", "content": system_prompt},
+#                 {"role": "user", "content": data_user_prompt(usecase, num_rows)}]
+#
+#     inputs = tokenizer.apply_chat_template(messages, return_tensors="pt").to("cuda")
+#     outputs = model.generate(inputs, max_new_tokens=80)
+#     response = tokenizer.decode(outputs[0])
+#
+#     torch.cuda.empty_cache()
+#     return response
 
-def llama_call(usecase, num_rows):
-    return 0
 
 def generate_test_data(usecase, num_rows, model):
 
@@ -80,10 +123,8 @@ def generate_test_data(usecase, num_rows, model):
         response = openai_call(usecase, num_rows)
     elif model == "Anthropic Claude 3.7 Sonnet":
         response = anthropic_call(usecase, num_rows)
-    elif model == "Meta Llama":
-        response = llama_call(usecase, num_rows)
-    elif model == "Microsoft Phi-3":
-        response = phi3_call(usecase, num_rows)
+    # elif model == "Meta Llama":
+    #     response = llama_call(usecase, num_rows)
     elif model == "Google Gemini 2.0-flash":
         response = google_call(usecase, num_rows)
 
@@ -101,7 +142,7 @@ demo = gr.Interface(
     fn = generate_test_data ,
     inputs = [gr.Textbox(lines=5,label="Describe your usecase:",placeholder="Describe the dataset you would like to create and how you will use it"),
               gr.Slider(minimum=1, maximum=200, step=1, value=20, label="Number of rows"),
-              gr.Dropdown(choices=["OpenAI GPT-4o-mini", "Anthropic Claude 3.7 Sonnet", "Google Gemini 2.0-flash", "Meta Llama", "Microsoft Phi-3"], value="OpenAI GPT-4o", label="Select Model")],
+              gr.Dropdown(choices=["OpenAI GPT-4o-mini", "Anthropic Claude 3.7 Sonnet", "Google Gemini 2.0-flash"], value="OpenAI GPT-4o-mini", label="Select Model")],
     outputs = [gr.DataFrame(label="Here is your dataset!",interactive=True),
                gr.File(label="Download CSV")],
     title = "Synthetic Data Generator",
