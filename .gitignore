@@ -1,3 +1,4 @@
 TrailMate/.env
 .venv
 TestDataGenerator/.env
+AICodeConverter/.env
